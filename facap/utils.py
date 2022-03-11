@@ -1,4 +1,5 @@
 import numpy as np
+import torch
 
 from matplotlib import pyplot as plt
 
@@ -24,3 +25,17 @@ def plot_graph(edges, color, name, markersize=20):
             plt.plot([st[0], end[0]], [st[1], end[1]], f"{color}.-", label=name, markersize=markersize)
         else:
             plt.plot([st[0], end[0]], [st[1], end[1]], f"{color}.-", markersize=markersize)
+
+
+def dicts_to_torch(dict_list, device):
+    for dct in dict_list:
+        for key in dct:
+            if key != "camera_idxs":
+                dct[key] = torch.from_numpy(dct[key]).to(float)
+
+
+def dicts_to_numpy(dict_list):
+    for dct in dict_list:
+        for key in dct:
+            if key != "camera_idxs":
+                dct[key] = dct[key].cpu().detach().numpy()

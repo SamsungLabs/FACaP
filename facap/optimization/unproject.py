@@ -5,17 +5,17 @@ from facap.data.scan import Camera
 from facap.geometry.torch import unproject_points_rotvec
 
 
-class UnprojectScan(nn.Module):
+class Unproject(nn.Module):
     def __init__(self, cameras):
-        super(UnprojectScan, self).__init__()
+        super(Unproject, self).__init__()
         self.cameras = sorted(list(cameras.keys()))
         self.cam2id = dict(zip(self.cameras, range(len(self.cameras))))
         self.rotvecs = nn.ParameterDict(
             {id: nn.Parameter(torch.from_numpy(cameras[id].rotvec)) for id in cameras})
         self.translations = nn.ParameterDict(
             {id: nn.Parameter(torch.from_numpy(cameras[id].translation)) for id in cameras})
-        f = torch.stack([torch.tensor(cameras[id].f) for id in cameras])
-        pp = torch.stack([torch.tensor(cameras[id].pp) for id in cameras])
+        f = torch.stack([torch.tensor(cameras[i].f) for i in cameras])
+        pp = torch.stack([torch.tensor(cameras[i].pp) for i in cameras])
         self.register_buffer("f", f)
         self.register_buffer("pp", pp)
 

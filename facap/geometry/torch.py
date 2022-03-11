@@ -75,9 +75,9 @@ def project_points_rotvec(coords_world, f, pp, rotvec, translation):
         v = torch.divide(x_cam, z_cam) * f[0] + pp[0]
         u = torch.divide(y_cam, z_cam) * f[1] + pp[1]
     else:
-        v = torch.divide(x_cam, z_cam) * f[0] + pp[0]
-        u = torch.divide(y_cam, z_cam) * f[1] + pp[1]
-    yxs = torch.stack((v, u)).T
+        v = torch.divide(x_cam, z_cam) * f[:, 0] + pp[:, 0]
+        u = torch.divide(y_cam, z_cam) * f[:, 1] + pp[:, 1]
+    yxs = torch.stack((u, v)).T
     return yxs
 
 
