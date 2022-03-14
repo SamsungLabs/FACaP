@@ -22,7 +22,7 @@ def ray_distance(a0, a, b0, b):
             beta.squeeze(dim=-1))
 
 
-def ray_error(left, right, unproject, project, distance_function, max_depth=3., parallel_eps=1e-2,
+def ray_error(left, right, unproject, distance_function, max_depth=3., parallel_eps=1e-2,
               depths_weight=0.1, depths_scale=1000, **kwargs):
     zero_depth = torch.zeros_like(left["depths"])
     ones_depth = torch.ones_like(left["depths"])
@@ -47,8 +47,8 @@ def ray_error(left, right, unproject, project, distance_function, max_depth=3., 
            & (right_est_depth < max_depth) & (norm_c > parallel_eps)
 
     dr = dr[mask]
-    scaled_right_depth = right["depth"] / depths_scale
-    scaled_left_depth = left["depth"] / depths_scale
+    scaled_right_depth = right["depths"] / depths_scale
+    scaled_left_depth = left["depths"] / depths_scale
 
     zeros = torch.zeros_like(dr)
     ray_term = distance_function(zeros, dr)

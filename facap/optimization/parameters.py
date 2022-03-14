@@ -2,6 +2,8 @@ import torch
 
 from torch import nn
 
+from facap.data.scan import Camera
+
 
 class CameraParameters(nn.Module):
     def __init__(self, cameras):

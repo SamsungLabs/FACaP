@@ -1,6 +1,6 @@
 paths:
   scan_path: "./data/htkr"
-  save_path: "./data/htkr/results_3d"
+  save_path: "./data/htkr/results_ray"
 
 data:
   wall_sparsity: 30
@@ -17,5 +17,9 @@ optimization:
   fixed_cameras_idx: [0,]
 
 error:
-  error_type: point_error
+  error_type: ray_error
   cost_function: mse
+  max_depth: 3.
+  parallel_eps: 0.01
+  depths_weight: 0.1
+  depths_scale: 1000

@@ -1,5 +1,6 @@
 paths:
   scan_path: "./data/htkr"
+  save_path: "./data/htkr/results_2d"
 
 data:
   wall_sparsity: 30

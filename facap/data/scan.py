@@ -9,7 +9,7 @@ from scipy.spatial.transform import Rotation as R
 
 from facap.geometry.open3d import unproject_points, sample_points_from_pcd
 from facap.geometry.numpy import unproject_points_rotvec
-from facap.colmap_scripts import read_model
+from facap.colmap_scripts.read_write_model import read_model
 
 
 def read_data(scan_path, frame_id):
@@ -166,10 +166,10 @@ class Scan:
 
         camera = o3d.camera.PinholeCameraIntrinsic()
 
-        for cam_id in zip(self._frames):
+        for cam_id in self._frames:
             color_map, wall, floor, depth_map, pose, camera_params = self.get_data(cam_id)
             depth_map = depth_map.astype(np.float32)
-            camera.set_intrinsics(*camera_params)
+            camera.set_intrinsics(int(camera_params[0]), int(camera_params[1]), *camera_params[2:])
             color = o3d.geometry.Image(color_map)
             depth = o3d.geometry.Image(depth_map)
 
@@ -231,7 +231,7 @@ class Scan:
                 target["translations"].extend([translation] * len(source[cam_id]))
                 target["f"].extend([f] * len(source[cam_id]))
                 target["pp"].extend([pp] * len(source[cam_id]))
-                target["camera_idxs"].extend([cam_id]*len(source[cam_id]))
+                target["camera_idxs"].extend([cam_id] * len(source[cam_id]))
 
         for part in [left, right, wall, floor]:
             for key in part:
@@ -244,6 +244,7 @@ class Scan:
         def unproject(part):
             return unproject_points_rotvec(part["depths"], part["points"], part["f"],
                                            part["pp"], part["rotvecs"], part["translations"], scale=self.scale)
+
         keypoint_mask = np.linalg.norm(unproject(left) - unproject(right), axis=-1) < max_initial_distance
         apply_mask(left, keypoint_mask)
         apply_mask(right, keypoint_mask)

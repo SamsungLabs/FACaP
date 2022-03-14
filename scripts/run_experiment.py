@@ -1,10 +1,13 @@
 import argparse
+import torch
+import os
+import open3d as o3d
 
 import yaml
 from torch import nn
 from torch import optim
 
-from facap import errors
+from facap import feature_errors
 from facap.data.scan import Scan
 from facap.optimization import Project, Unproject, CameraParameters
 from facap.utils import dicts_to_torch
@@ -19,10 +22,15 @@ if __name__ == '__main__':
 
     scan = Scan(cfg["paths"]["scan_path"], wall_sparsity=cfg["data"]["wall_sparsity"],
                 floor_sparsity=cfg["data"]["floor_sparsity"], scale=cfg["data"]["depths_scale"], cut_frames=100)
+    save_path = cfg["paths"]["save_path"]
+    os.makedirs(save_path, exist_ok=True)
+    o3d.io.write_triangle_mesh(f"{save_path}/source_mesh.ply", scan.make_mesh())
+
     data = scan.generate_ba_data(min_frame_difference=cfg["data"]["min_frame_difference"],
                                  max_initial_distance=cfg["data"]["max_initial_distance"],
                                  floor_percentiles=cfg["data"]["floor_percentiles"]
                                  )
+
     dicts_to_torch(data, args.device)
     left, right, wall, floor = data
 
@@ -50,7 +58,7 @@ if __name__ == '__main__':
                       "scale": scan.scale,
                       "distance_function": cost_function,
                       **cfg["error"]}
-        ba_function = getattr(errors, cfg["error"]["error_type"])
+        ba_function = getattr(feature_errors, cfg["error"]["error_type"])
         ba_term = ba_function(left, right, **error_args)
 
         floor_term = 0.
@@ -58,9 +66,13 @@ if __name__ == '__main__':
 
         loss = ba_term + wall_term + floor_term
         loss.backward()
-        print(float(loss))
         optimizer.step()
+        print(f"The value of the loss function on the {epoch}-iteration is {float(loss)}.")
 
+    torch.save(camera_parameters.state_dict(), f"{save_path}/cameras.pth")
+    cameras = camera_parameters.get_cameras()
+    scan.set_cameras(cameras)
+    o3d.io.write_triangle_mesh(f"{save_path}/processed_mesh.ply", scan.make_mesh())
 
 # import pytorch3d
 #

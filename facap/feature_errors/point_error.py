@@ -1,4 +1,4 @@
-def point_error(left, right, unproject, project,  distance_function, **kwargs):
+def point_error(left, right, unproject, distance_function, **kwargs):
     processed_left = unproject(left["depths"], left["points"], left["camera_idxs"])
     processed_right = unproject(right["depths"], right["points"], right["camera_idxs"])
 
