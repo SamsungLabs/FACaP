@@ -9,7 +9,7 @@ from scipy.spatial.transform import Rotation as R
 
 from facap.geometry.open3d import unproject_points, sample_points_from_pcd
 from facap.geometry.numpy import unproject_points_rotvec
-from third_party.colmap_scripts.read_write_model import read_model
+from facap.colmap_scripts import read_model
 
 
 def read_data(scan_path, frame_id):

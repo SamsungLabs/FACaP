@@ -1,55 +1,67 @@
-import torch.nn
+import argparse
 
-from facap.data.scan import Scan
-from facap.utils import dicts_to_torch
-from facap.optimization.unproject_project import UnprojectProject
-
+import yaml
+from torch import nn
 from torch import optim
 
-if __name__ == "__main__":
-    scan_path = "./data/htkr"
-    wall_sparsity = 30
-    floor_sparsity = 30
-    min_frame_difference = 3
-    max_initial_distance = 0.4
-    floor_percentiles = (0.5, 95)
-    num_epoches = 10
-    lr = 0.1
-    momentum = 0.9
-    fixed_cameras_idx = (0,)
+from facap import errors
+from facap.data.scan import Scan
+from facap.optimization import Project, Unproject, CameraParameters
+from facap.utils import dicts_to_torch
 
-    nb_epochs = 200
-    device = "cpu"
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--config", help="YAML configuration file")
+    parser.add_argument("--device", default='cuda:0', help="Device to run")
+    args = parser.parse_args()
+    with open(args.config, 'r') as ymlfile:
+        cfg = yaml.load(ymlfile, Loader=yaml.FullLoader)
 
-    scan = Scan(scan_path, wall_sparsity=wall_sparsity, floor_sparsity=floor_sparsity, cut_frames=100)
-
-    data = scan.generate_ba_data(min_frame_difference=min_frame_difference,
-                                 max_initial_distance=max_initial_distance,
-                                 floor_percentiles=floor_percentiles
+    scan = Scan(cfg["paths"]["scan_path"], wall_sparsity=cfg["data"]["wall_sparsity"],
+                floor_sparsity=cfg["data"]["floor_sparsity"], scale=cfg["data"]["depths_scale"], cut_frames=100)
+    data = scan.generate_ba_data(min_frame_difference=cfg["data"]["min_frame_difference"],
+                                 max_initial_distance=cfg["data"]["max_initial_distance"],
+                                 floor_percentiles=cfg["data"]["floor_percentiles"]
                                  )
-    dicts_to_torch(data, device)
+    dicts_to_torch(data, args.device)
     left, right, wall, floor = data
 
-    unporoject_project = UnprojectProject(scan.cameras).to(device)
+    camera_parameters = CameraParameters(scan.cameras).to(args.device).float()
+    unporoject = Unproject(camera_parameters, scale=scan.scale)
+    project = Project(camera_parameters)
 
     params = []
 
-    fixed_cameras = [scan._frames[i] for i in fixed_cameras_idx]
-    for name, param in unporoject_project.named_parameters():
+    fixed_cameras = [scan._frames[i] for i in cfg["optimization"]["fixed_cameras_idx"]]
+    for name, param in camera_parameters.named_parameters():
         if name.split(".")[-1] not in fixed_cameras:
             params.append(param)
 
-    optimizer = optim.SGD(params, lr=lr, momentum=momentum)
-    loss_function = torch.nn.MSELoss()
+    optimizer = optim.SGD(params, lr=cfg["optimization"]["lr"], momentum=cfg["optimization"]["momentum"])
+    if cfg["error"]["cost_function"] == "mse":
+        cost_function = nn.MSELoss()
+    else:
+        raise NotImplementedError
 
-    for epoch in range(num_epoches):
+    for epoch in range(cfg["optimization"]["num_epoches"]):
         optimizer.zero_grad()
-        pred_right_points = unporoject_project(left["depths"], left["points"],
-                                               left["camera_idxs"], right["camera_idxs"])
-        loss = loss_function(right["points"], pred_right_points)
+        error_args = {"unproject": unporoject,
+                      "project": project,
+                      "scale": scan.scale,
+                      "distance_function": cost_function,
+                      **cfg["error"]}
+        ba_function = getattr(errors, cfg["error"]["error_type"])
+        ba_term = ba_function(left, right, **error_args)
+
+        floor_term = 0.
+        wall_term = 0.
+
+        loss = ba_term + wall_term + floor_term
         loss.backward()
         print(float(loss))
         optimizer.step()
+
+
 # import pytorch3d
 #
 # from pytorch3d.ops import knn_points

@@ -1,0 +1,20 @@
+paths:
+  scan_path: "./data/htkr"
+
+data:
+  wall_sparsity: 30
+  floor_sparsity: 30
+  min_frame_difference: 3
+  max_initial_distance: 0.4
+  floor_percentiles: [ 0.5, 95 ]
+  depths_scale: 1000
+
+optimization:
+  num_epoches: 10
+  lr: 0.0001
+  momentum: 0.9
+  fixed_cameras_idx: [0,]
+
+error:
+  error_type: reprojection_error
+  cost_function: mse

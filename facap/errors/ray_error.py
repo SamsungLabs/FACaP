@@ -1,7 +1,5 @@
 import torch
 
-from facap.geometry.torch import unproject_points_rotvec
-
 
 def ray_distance(a0, a, b0, b):
     c = torch.cross(a, b)
@@ -24,19 +22,16 @@ def ray_distance(a0, a, b0, b):
             beta.squeeze(dim=-1))
 
 
-def ray_error(left, right, depth_scale=1000, max_depth=3., parallel_eps=1e-2):
+def ray_error(left, right, unproject, project, distance_function, max_depth=3., parallel_eps=1e-2,
+              depths_weight=0.1, depths_scale=1000, **kwargs):
     zero_depth = torch.zeros_like(left["depths"])
     ones_depth = torch.ones_like(left["depths"])
 
-    unproject = lambda depth, part: unproject_points_rotvec(depth, part["points"], part["f"],
-                                                            part["pp"], part["rotvecs"], part["translations"],
-                                                            scale=depth_scale)
+    a0 = unproject(zero_depth, left["points"], left["camera_idxs"])
+    b0 = unproject(zero_depth, right["points"], right["camera_idxs"])
 
-    a0 = unproject(zero_depth, left)
-    b0 = unproject(zero_depth, right)
-
-    a1 = unproject(ones_depth, left)
-    b1 = unproject(ones_depth, right)
+    a1 = unproject(ones_depth, left["points"], left["camera_idxs"])
+    b1 = unproject(ones_depth, right["points"], right["camera_idxs"])
 
     a = a1 - a0
     b = b1 - b0
@@ -52,9 +47,12 @@ def ray_error(left, right, depth_scale=1000, max_depth=3., parallel_eps=1e-2):
            & (right_est_depth < max_depth) & (norm_c > parallel_eps)
 
     dr = dr[mask]
-    scaled_right_depth = right["depth"] / depth_scale
-    scaled_left_depth = left["depth"] / depth_scale
-    r1 = (scaled_right_depth[mask] - right_est_depth[mask])
-    r2 = (scaled_left_depth[mask] - left_est_depth[mask])
+    scaled_right_depth = right["depth"] / depths_scale
+    scaled_left_depth = left["depth"] / depths_scale
 
-    return dr, r1, r2
+    zeros = torch.zeros_like(dr)
+    ray_term = distance_function(zeros, dr)
+    depths_distance = distance_function(scaled_right_depth[mask], right_est_depth[mask])
+    depths_distance += distance_function(scaled_left_depth[mask], left_est_depth[mask])
+
+    return ray_term + depths_weight * depths_distance

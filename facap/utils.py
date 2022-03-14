@@ -31,7 +31,7 @@ def dicts_to_torch(dict_list, device):
     for dct in dict_list:
         for key in dct:
             if key != "camera_idxs":
-                dct[key] = torch.from_numpy(dct[key]).to(float)
+                dct[key] = torch.from_numpy(dct[key]).to(device).float()
 
 
 def dicts_to_numpy(dict_list):
