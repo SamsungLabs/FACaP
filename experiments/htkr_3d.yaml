@@ -18,4 +18,5 @@ optimization:
 
 error:
   error_type: point_error
-  cost_function: mse
+  floor_term: True
+  floor_weight: 0.1

@@ -18,4 +18,3 @@ optimization:
 
 error:
   error_type: reprojection_error
-  cost_function: mse

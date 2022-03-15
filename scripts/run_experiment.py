@@ -9,7 +9,7 @@ from torch import optim
 
 from facap import feature_errors
 from facap.data.scan import Scan
-from facap.optimization import Project, Unproject, CameraParameters
+from facap.optimization import Project, Unproject, CameraParameters, FloorTerm
 from facap.utils import dicts_to_torch
 
 if __name__ == '__main__':
@@ -35,8 +35,12 @@ if __name__ == '__main__':
     left, right, wall, floor = data
 
     camera_parameters = CameraParameters(scan.cameras).to(args.device).float()
-    unporoject = Unproject(camera_parameters, scale=scan.scale)
+    unproject = Unproject(camera_parameters, scale=scan.scale)
     project = Project(camera_parameters)
+    cost_function = nn.MSELoss()
+
+    if cfg["error"]["floor_term"]:
+        floor_function = FloorTerm(floor, unproject, cost_function)
 
     params = []
 
@@ -46,14 +50,10 @@ if __name__ == '__main__':
             params.append(param)
 
     optimizer = optim.SGD(params, lr=cfg["optimization"]["lr"], momentum=cfg["optimization"]["momentum"])
-    if cfg["error"]["cost_function"] == "mse":
-        cost_function = nn.MSELoss()
-    else:
-        raise NotImplementedError
 
     for epoch in range(cfg["optimization"]["num_epoches"]):
         optimizer.zero_grad()
-        error_args = {"unproject": unporoject,
+        error_args = {"unproject": unproject,
                       "project": project,
                       "scale": scan.scale,
                       "distance_function": cost_function,
@@ -63,6 +63,9 @@ if __name__ == '__main__':
 
         floor_term = 0.
         wall_term = 0.
+
+        if cfg["error"]["floor_term"]:
+            floor_term = floor_function()*cfg["error"]["floor_weight"]
 
         loss = ba_term + wall_term + floor_term
         loss.backward()

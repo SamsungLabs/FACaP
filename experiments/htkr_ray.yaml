@@ -18,8 +18,9 @@ optimization:
 
 error:
   error_type: ray_error
-  cost_function: mse
   max_depth: 3.
   parallel_eps: 0.01
   depths_weight: 0.1
   depths_scale: 1000
+  floor_term: True
+  floor_weight: 0.1
