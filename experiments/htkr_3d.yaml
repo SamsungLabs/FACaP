@@ -20,3 +20,5 @@ error:
   error_type: point_error
   floor_term: True
   floor_weight: 0.1
+  wall_term: True
+  wall_weight: 0.1

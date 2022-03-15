@@ -2,6 +2,7 @@ import argparse
 import torch
 import os
 import open3d as o3d
+import numpy as np
 
 import yaml
 from torch import nn
@@ -9,7 +10,7 @@ from torch import optim
 
 from facap import feature_errors
 from facap.data.scan import Scan
-from facap.optimization import Project, Unproject, CameraParameters, FloorTerm
+from facap.optimization import Project, Unproject, CameraParameters, FloorTerm, WallTerm
 from facap.utils import dicts_to_torch
 
 if __name__ == '__main__':
@@ -42,6 +43,11 @@ if __name__ == '__main__':
     if cfg["error"]["floor_term"]:
         floor_function = FloorTerm(floor, unproject, cost_function)
 
+    if cfg["error"]["wall_term"]:
+        scan_path = cfg["paths"]["scan_path"]
+        floorplan = torch.from_numpy(np.load(f"{scan_path}/floorplan.npy"))
+        wall_function = WallTerm(wall, unproject, cost_function, floorplan).to(args.device).float()
+
     params = []
 
     fixed_cameras = [scan._frames[i] for i in cfg["optimization"]["fixed_cameras_idx"]]
@@ -67,8 +73,12 @@ if __name__ == '__main__':
         print(f"\t\t feature-based BA term - {float(ba_term)}")
 
         if cfg["error"]["floor_term"]:
-            floor_term = floor_function()*cfg["error"]["floor_weight"]
+            floor_term = floor_function() * cfg["error"]["floor_weight"]
             print(f"\t\t floor term - {float(floor_term)}")
+
+        if cfg["error"]["wall_term"]:
+            floor_term = wall_function() * cfg["error"]["wall_weight"]
+            print(f"\t\t wall term - {float(floor_term)}")
 
         loss = ba_term + wall_term + floor_term
         loss.backward()
