@@ -63,14 +63,16 @@ if __name__ == '__main__':
 
         floor_term = 0.
         wall_term = 0.
+        print(f"The value of the loss function on the {epoch}-iteration")
+        print(f"\t\t feature-based BA term - {float(ba_term)}")
 
         if cfg["error"]["floor_term"]:
             floor_term = floor_function()*cfg["error"]["floor_weight"]
+            print(f"\t\t floor term - {float(floor_term)}")
 
         loss = ba_term + wall_term + floor_term
         loss.backward()
         optimizer.step()
-        print(f"The value of the loss function on the {epoch}-iteration is {float(loss)}.")
 
     torch.save(camera_parameters.state_dict(), f"{save_path}/cameras.pth")
     cameras = camera_parameters.get_cameras()

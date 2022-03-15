@@ -20,7 +20,6 @@ class FloorTerm(nn.Module):
         self.unproject = unproject
 
         self.plane = self.get_initial_plane()
-        print(self.plane.shape)
         self.distance_function = distance_function
 
     def get_initial_plane(self):
@@ -31,7 +30,7 @@ class FloorTerm(nn.Module):
 
     def forward(self):
         floor_pcd = self.unproject(self.floor["depths"], self.floor["points"], self.floor["camera_idxs"])
-        floor_distances = (floor_pcd * self.plane[:3] - self.plane[3])
+        floor_distances = (torch.sum(floor_pcd * self.plane[:3], dim=-1) + self.plane[3])
         zeros = torch.zeros_like(floor_distances)
         floor_term = self.distance_function(zeros, floor_distances)
         return floor_term
