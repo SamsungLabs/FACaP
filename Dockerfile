@@ -31,6 +31,7 @@ RUN wget -q "https://repo.continuum.io/miniconda/Miniconda3-py39_4.9.2-Linux-x86
 ENV HOME /home/$USERNAME
 ADD env.yaml env.yaml
 RUN conda env update -f env.yaml --prune
+RUN pip install open3d -U
 
 
 SHELL ["/bin/bash", "-c"]

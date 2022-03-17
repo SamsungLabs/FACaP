@@ -104,6 +104,7 @@ def make_pcd_from_numpy(xyz, colors):
     if len(colors.shape) == 1:
         colors = np.ones_like(xyz) * colors
     pcd.colors = o3d.utility.Vector3dVector(colors)
+    pcd.estimate_normals()
     return pcd
 
 

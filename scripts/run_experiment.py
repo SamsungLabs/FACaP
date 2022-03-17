@@ -14,6 +14,7 @@ from facap.optimization import Project, Unproject, CameraParameters, FloorTerm, 
 from facap.utils import dicts_to_torch
 
 if __name__ == '__main__':
+    print("anton")
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", help="YAML configuration file")
     parser.add_argument("--device", default='cuda:0', help="Device to run")
