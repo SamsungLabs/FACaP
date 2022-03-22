@@ -10,11 +10,11 @@ from torch import optim
 
 from facap import feature_errors
 from facap.data.scan import Scan
-from facap.optimization import Project, Unproject, CameraParameters, FloorTerm, WallTerm
+from facap.optimization import Project, Unproject, CameraParameters, FloorTerm, WallTerm, WallSegmentTerm
 from facap.utils import dicts_to_torch
+from facap.geometry.allign_walls import align_walls
 
 if __name__ == '__main__':
-    print("anton")
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", help="YAML configuration file")
     parser.add_argument("--device", default='cuda:0', help="Device to run")
@@ -22,8 +22,9 @@ if __name__ == '__main__':
     with open(args.config, 'r') as ymlfile:
         cfg = yaml.load(ymlfile, Loader=yaml.FullLoader)
 
-    scan = Scan(cfg["paths"]["scan_path"], wall_sparsity=cfg["data"]["wall_sparsity"],
-                floor_sparsity=cfg["data"]["floor_sparsity"], scale=cfg["data"]["depths_scale"], cut_frames=100)
+    scan_path = cfg["paths"]["scan_path"]
+    scan = Scan(scan_path, wall_sparsity=cfg["data"]["wall_sparsity"],
+                floor_sparsity=cfg["data"]["floor_sparsity"], scale=cfg["data"]["depths_scale"])
     save_path = cfg["paths"]["save_path"]
     os.makedirs(save_path, exist_ok=True)
     o3d.io.write_triangle_mesh(f"{save_path}/source_mesh.ply", scan.make_mesh())
@@ -32,6 +33,11 @@ if __name__ == '__main__':
                                  max_initial_distance=cfg["data"]["max_initial_distance"],
                                  floor_percentiles=cfg["data"]["floor_percentiles"]
                                  )
+
+    if "wall_term_type" in cfg["error"] and cfg["error"]["wall_term_type"] == "segment":
+        floorplan = torch.from_numpy(np.load(f"{scan_path}/floorplan.npy"))
+        alligned_walls = align_walls(data[2], floorplan)
+        data = (data[0], data[1], alligned_walls, data[3])
 
     dicts_to_torch(data, args.device)
     left, right, wall, floor = data
@@ -45,9 +51,12 @@ if __name__ == '__main__':
         floor_function = FloorTerm(floor, unproject, cost_function)
 
     if cfg["error"]["wall_term"]:
-        scan_path = cfg["paths"]["scan_path"]
         floorplan = torch.from_numpy(np.load(f"{scan_path}/floorplan.npy"))
-        wall_function = WallTerm(wall, unproject, cost_function, floorplan).to(args.device).float()
+        if cfg["error"]["wall_term_type"] == "point":
+            wall_function = WallTerm(wall, unproject, cost_function, floorplan).to(args.device).float()
+        else:
+            wall_function = WallSegmentTerm(wall, unproject, cost_function, floorplan).to(args.device).float()
+
 
     params = []
 

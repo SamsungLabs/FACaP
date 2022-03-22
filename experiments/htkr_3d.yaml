@@ -3,7 +3,7 @@ paths:
   save_path: "./data/htkr/results_3d"
 
 data:
-  wall_sparsity: 30
+  wall_sparsity: 150
   floor_sparsity: 30
   min_frame_difference: 3
   max_initial_distance: 0.4
@@ -21,4 +21,5 @@ error:
   floor_term: True
   floor_weight: 0.1
   wall_term: True
+  wall_term_type: "segment"
   wall_weight: 0.1

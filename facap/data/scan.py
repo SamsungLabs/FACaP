@@ -1,6 +1,6 @@
 from copy import deepcopy
 from glob import glob
-from open3d import pipelines
+from open3d import integration
 
 import cv2
 import numpy as np
@@ -159,10 +159,10 @@ class Scan:
 
     def make_mesh(self, vox_length=0.05):
 
-        volume = pipelines.integration.ScalableTSDFVolume(
+        volume = integration.ScalableTSDFVolume(
             voxel_length=vox_length,
             sdf_trunc=vox_length * 4,
-            color_type=pipelines.integration.TSDFVolumeColorType.RGB8)
+            color_type=integration.TSDFVolumeColorType.RGB8)
 
         camera = o3d.camera.PinholeCameraIntrinsic()
 
