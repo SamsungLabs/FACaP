@@ -1,6 +1,6 @@
 from copy import deepcopy
 from glob import glob
-from open3d import pipelines
+from open3d import integration
 
 import cv2
 import numpy as np
@@ -9,7 +9,7 @@ from scipy.spatial.transform import Rotation as R
 
 from facap.geometry.open3d import unproject_points, sample_points_from_pcd
 from facap.geometry.numpy import unproject_points_rotvec
-from third_party.colmap_scripts.read_write_model import read_model
+from facap.colmap_scripts.read_write_model import read_model
 
 
 def read_data(scan_path, frame_id):
@@ -24,6 +24,31 @@ def read_data(scan_path, frame_id):
     camera_params = np.loadtxt(f'{scan_path}/cam_params-{frame_id}.txt')
 
     return color, wall, floor, depth, pose, camera_params
+
+
+def get_yxds(scan_path, frame_ids, max_depth=3000, min_depth=0):
+    yxds = {}
+    for frame_id in frame_ids:
+        color, _, _, depth, _, _ = read_data(scan_path, frame_id)
+        depth_mask = np.where((depth > min_depth) * (depth < max_depth))
+        yxds[frame_id] = get_index_value_dict(depth, depth_mask)
+    return yxds
+
+
+def get_segmentation(scan_path, frame_ids, part="floor", sparsity=30, max_depth=3000, min_depth=0):
+    result = {}
+    for frame_id in frame_ids:
+        color, wall, floor, depth, _, _ = read_data(scan_path, frame_id)
+
+        if part == "floor":
+            part = floor
+        else:
+            part = wall
+
+        part_mask = np.where((depth > min_depth) * (depth < max_depth) * (wall > 0))
+        part_dict = get_index_value_dict(depth, part_mask, sparsity=sparsity)
+        result[frame_id] = list(part_dict.items())
+    return result
 
 
 def read_features(scan_path, xyds, frame_ids, min_freq=2):
@@ -66,10 +91,20 @@ class Camera:
         self.rotvec = rotvec.astype(float)
         self.translation = translation.astype(float)
 
+    @classmethod
+    def read_camera(cls, scan_path, frame_id):
+        pose = np.loadtxt(f'{scan_path}/pose-{frame_id}.txt')
+        camera_params = np.loadtxt(f'{scan_path}/cam_params-{frame_id}.txt')
+        rotvec = R.from_matrix(pose[:3, :3]).as_rotvec()
+        translation = pose[:3, 3]
+        f = (camera_params[2], camera_params[3])
+        pp = (camera_params[4], camera_params[5])
+        camera = cls(f, pp, rotvec, translation)
+        return camera
+
 
 class Scan:
-    def __init__(self, scan_path, sparsity=1, cut_frames=None,
-                 wall_sparsity=30, floor_sparsity=30, store_frames=False, scale=1000):
+    def __init__(self, scan_path, sparsity=1, cut_frames=None, scale=1000):
         frames = sorted(glob(f"{scan_path}/frame*_floor*"))
         frame_ids = [i.split("/")[-1][6:-10] for i in frames]
         frame_ids = frame_ids[::sparsity]
@@ -77,62 +112,13 @@ class Scan:
         if cut_frames is not None:
             frame_ids = frame_ids[:cut_frames]
         self.scan_path = scan_path
-        self.wall_sparsity = wall_sparsity
-        self.floor_sparsity = floor_sparsity
         self._frames = frame_ids
-        self.store_frames = store_frames
         self.scale = scale
-
-        if self.store_frames:
-            self.rgbs = {}
-            self.depth_maps = {}
-        self.yxds = {}
-        self.cameras = {}
-        self.floor = {}
-        self.wall = {}
-        self.read_data(scan_path, frame_ids)
-        self.features = read_features(scan_path, self.yxds, frame_ids)
-
-        self.frame_points = self.get_frame_points()
-
-    def read_data(self, scan_path, frame_ids, max_depth=3000, min_depth=0):
-        for frame_id in frame_ids:
-            color, wall, floor, depth, pose, camera_params = read_data(scan_path, frame_id)
-            if self.store_frames:
-                self.rgbs[frame_id] = color
-                self.depth_maps[frame_id] = depth
-
-            depth_mask = np.where((depth > min_depth) * (depth < max_depth))
-            self.yxds[frame_id] = get_index_value_dict(depth, depth_mask)
-
-            wall_mask = np.where((depth > min_depth) * (depth < max_depth) * (wall > 0))
-            wall_dict = get_index_value_dict(depth, wall_mask, sparsity=self.wall_sparsity)
-            self.wall[frame_id] = list(wall_dict.items())
-
-            floor_mask = np.where((depth > min_depth) * (depth < max_depth) * (floor > 0))
-            floor_dict = get_index_value_dict(depth, floor_mask, sparsity=self.floor_sparsity)
-            self.floor[frame_id] = list(floor_dict.items())
-
-            rotvec = R.from_matrix(pose[:3, :3]).as_rotvec()
-            translation = pose[:3, 3]
-            f = (camera_params[2], camera_params[3])
-            pp = (camera_params[4], camera_params[5])
-            camera = Camera(f, pp, rotvec, translation)
-            self.cameras[frame_id] = camera
+        self.cameras = {frame_id: Camera.read_camera(scan_path, frame_id) for frame_id in frame_ids}
 
     def get_data(self, cam_id):
         color, wall, floor, depth, pose, camera_params = read_data(self.scan_path, cam_id)
         return color, wall, floor, depth, pose, camera_params
-
-    def get_frame_points(self):
-        frame_points = {}
-        for point in self.features:
-            for img_id in self.features[point]:
-                if img_id not in frame_points:
-                    frame_points[img_id] = {}
-                yx = self.features[point][img_id][0]
-                frame_points[img_id][point] = yx
-        return frame_points
 
     def make_pcd(self, num_points=None):
         pcds = []
@@ -159,17 +145,17 @@ class Scan:
 
     def make_mesh(self, vox_length=0.05):
 
-        volume = pipelines.integration.ScalableTSDFVolume(
+        volume = integration.ScalableTSDFVolume(
             voxel_length=vox_length,
             sdf_trunc=vox_length * 4,
-            color_type=pipelines.integration.TSDFVolumeColorType.RGB8)
+            color_type=integration.TSDFVolumeColorType.RGB8)
 
         camera = o3d.camera.PinholeCameraIntrinsic()
 
-        for cam_id in zip(self._frames):
+        for cam_id in self._frames:
             color_map, wall, floor, depth_map, pose, camera_params = self.get_data(cam_id)
             depth_map = depth_map.astype(np.float32)
-            camera.set_intrinsics(*camera_params)
+            camera.set_intrinsics(int(camera_params[0]), int(camera_params[1]), *camera_params[2:])
             color = o3d.geometry.Image(color_map)
             depth = o3d.geometry.Image(depth_map)
 
@@ -186,7 +172,9 @@ class Scan:
 
     def generate_ba_data(self, min_frame_difference=3,
                          floor_percentiles=(2, 90),
-                         max_initial_distance=0.4):
+                         max_initial_distance=0.4,
+                         wall_sparsity=30,
+                         floor_sparsity=30):
         left = {"points": [],
                 "depths": [],
                 "camera_idxs": [],
@@ -198,8 +186,11 @@ class Scan:
         floor = deepcopy(left)
         wall = deepcopy(left)
 
-        for point_id in self.features:
-            point = self.features[point_id]
+        yxds = get_yxds(self.scan_path, self._frames)
+        features = read_features(self.scan_path, yxds, self._frames)
+
+        for point_id in features:
+            point = features[point_id]
             cams = list(point.keys())
             cam_params = [self.cameras[i] for i in cams]
             rotvecs = [i.rotvec for i in cam_params]
@@ -216,8 +207,11 @@ class Scan:
                             part["f"].append(cam_params[idx].f)
                             part["pp"].append(cam_params[idx].pp)
                             part["camera_idxs"].append(cam_idx)
+        del yxds
+        wall_data = get_segmentation(self.scan_path, self._frames, part="wall", sparsity=wall_sparsity)
+        floor_data = get_segmentation(self.scan_path, self._frames, part="floor", sparsity=floor_sparsity)
 
-        for source, target in zip([self.wall, self.floor], [wall, floor]):
+        for source, target in zip([wall_data, floor_data], [wall, floor]):
             for cam_id in source:
                 camera = self.cameras[cam_id]
                 rotvec = camera.rotvec
@@ -231,7 +225,9 @@ class Scan:
                 target["translations"].extend([translation] * len(source[cam_id]))
                 target["f"].extend([f] * len(source[cam_id]))
                 target["pp"].extend([pp] * len(source[cam_id]))
-                target["camera_idxs"].extend([cam_id]*len(source[cam_id]))
+                target["camera_idxs"].extend([cam_id] * len(source[cam_id]))
+
+        del wall_data, floor_data
 
         for part in [left, right, wall, floor]:
             for key in part:
@@ -244,6 +240,7 @@ class Scan:
         def unproject(part):
             return unproject_points_rotvec(part["depths"], part["points"], part["f"],
                                            part["pp"], part["rotvecs"], part["translations"], scale=self.scale)
+
         keypoint_mask = np.linalg.norm(unproject(left) - unproject(right), axis=-1) < max_initial_distance
         apply_mask(left, keypoint_mask)
         apply_mask(right, keypoint_mask)

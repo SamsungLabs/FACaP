@@ -32,6 +32,8 @@ ENV HOME /home/$USERNAME
 ADD env.yaml env.yaml
 RUN conda env update -f env.yaml --prune
 
+RUN pip install open3d==0.10.0 -U
+
 
 SHELL ["/bin/bash", "-c"]
 

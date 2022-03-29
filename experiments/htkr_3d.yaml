@@ -1,0 +1,25 @@
+paths:
+  scan_path: "./data/htkr"
+  save_path: "./data/htkr/results_3d"
+
+data:
+  wall_sparsity: 150
+  floor_sparsity: 30
+  min_frame_difference: 3
+  max_initial_distance: 0.4
+  floor_percentiles: [ 0.5, 95 ]
+  depths_scale: 1000
+
+optimization:
+  num_epoches: 10
+  lr: 0.1
+  momentum: 0.9
+  fixed_cameras_idx: [0,]
+
+error:
+  error_type: point_error
+  floor_term: True
+  floor_weight: 0.1
+  wall_term: True
+  wall_term_type: "segment"
+  wall_weight: 0.1
