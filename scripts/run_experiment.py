@@ -11,7 +11,7 @@ from torch import optim
 from facap import feature_errors
 from facap.data.scan import Scan
 from facap.optimization import Project, Unproject, CameraParameters, FloorTerm, WallTerm, WallSegmentTerm
-from facap.utils import dicts_to_torch
+from facap.utils import dicts_to_torch, visualize_data
 from facap.geometry.allign_walls import align_walls
 
 if __name__ == '__main__':
@@ -23,22 +23,23 @@ if __name__ == '__main__':
         cfg = yaml.load(ymlfile, Loader=yaml.FullLoader)
 
     scan_path = cfg["paths"]["scan_path"]
-    scan = Scan(scan_path, wall_sparsity=cfg["data"]["wall_sparsity"],
-                floor_sparsity=cfg["data"]["floor_sparsity"], scale=cfg["data"]["depths_scale"])
+    scan = Scan(scan_path, scale=cfg["data"]["depths_scale"])
     save_path = cfg["paths"]["save_path"]
     os.makedirs(save_path, exist_ok=True)
     o3d.io.write_triangle_mesh(f"{save_path}/source_mesh.ply", scan.make_mesh())
 
     data = scan.generate_ba_data(min_frame_difference=cfg["data"]["min_frame_difference"],
                                  max_initial_distance=cfg["data"]["max_initial_distance"],
-                                 floor_percentiles=cfg["data"]["floor_percentiles"]
+                                 floor_percentiles=cfg["data"]["floor_percentiles"],
+                                 wall_sparsity=cfg["data"]["wall_sparsity"],
+                                 floor_sparsity=cfg["data"]["floor_sparsity"]
                                  )
 
     if "wall_term_type" in cfg["error"] and cfg["error"]["wall_term_type"] == "segment":
         floorplan = torch.from_numpy(np.load(f"{scan_path}/floorplan.npy"))
         alligned_walls = align_walls(data[2], floorplan)
         data = (data[0], data[1], alligned_walls, data[3])
-
+    visualize_data(data, save_path=save_path)
     dicts_to_torch(data, args.device)
     left, right, wall, floor = data
 
@@ -56,7 +57,6 @@ if __name__ == '__main__':
             wall_function = WallTerm(wall, unproject, cost_function, floorplan).to(args.device).float()
         else:
             wall_function = WallSegmentTerm(wall, unproject, cost_function, floorplan).to(args.device).float()
-
 
     params = []
 
