@@ -105,7 +105,7 @@ class Camera:
 
 class Scan:
     def __init__(self, scan_path, sparsity=1, cut_frames=None, scale=1000):
-        frames = sorted(glob(f"{scan_path}/arcore/frame*_floor*"))
+        frames = sorted(glob(f"{scan_path}/segmentation/frame*_floor*"))
         frame_ids = [i.split("/")[-1][6:-10] for i in frames]
         frame_ids = frame_ids[::sparsity]
 
