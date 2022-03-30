@@ -1,6 +1,6 @@
 paths:
-  scan_path: "./data/rechnoy/rechnoy"
-  save_path: "./data/results/rechnoy_3d"
+  scan_path: "./data/rechnoy"
+  save_path: "./data/rechnoy/rechnoy_3d"
 
 data:
   wall_sparsity: 150
