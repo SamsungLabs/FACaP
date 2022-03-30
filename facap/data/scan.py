@@ -13,15 +13,15 @@ from facap.colmap_scripts.read_write_model import read_model
 
 
 def read_data(scan_path, frame_id):
-    color = cv2.imread(f'{scan_path}/frame-{frame_id}.png')
-    wall = cv2.imread(f'{scan_path}/frame-{frame_id}_wall.png', cv2.IMREAD_GRAYSCALE)
+    color = cv2.imread(f'{scan_path}/arcore/frame-{frame_id}.png')
+    wall = cv2.imread(f'{scan_path}/segmentation/frame-{frame_id}_wall.png', cv2.IMREAD_GRAYSCALE)
     wall = np.rot90(wall > wall.min())
-    floor = cv2.imread(f'{scan_path}/frame-{frame_id}_floor.png', cv2.IMREAD_GRAYSCALE)
+    floor = cv2.imread(f'{scan_path}/segmentation/frame-{frame_id}_floor.png', cv2.IMREAD_GRAYSCALE)
     floor = np.rot90(floor > floor.min())
-    depth = cv2.imread(f'{scan_path}/depth-{frame_id}.png', -1)
+    depth = cv2.imread(f'{scan_path}/arcore/depth-{frame_id}.png', -1)
 
-    pose = np.loadtxt(f'{scan_path}/pose-{frame_id}.txt')
-    camera_params = np.loadtxt(f'{scan_path}/cam_params-{frame_id}.txt')
+    pose = np.loadtxt(f'{scan_path}/arcore/pose-{frame_id}.txt')
+    camera_params = np.loadtxt(f'{scan_path}/arcore/cam_params-{frame_id}.txt')
 
     return color, wall, floor, depth, pose, camera_params
 
@@ -93,8 +93,8 @@ class Camera:
 
     @classmethod
     def read_camera(cls, scan_path, frame_id):
-        pose = np.loadtxt(f'{scan_path}/pose-{frame_id}.txt')
-        camera_params = np.loadtxt(f'{scan_path}/cam_params-{frame_id}.txt')
+        pose = np.loadtxt(f'{scan_path}/arcore/pose-{frame_id}.txt')
+        camera_params = np.loadtxt(f'{scan_path}/arcore/cam_params-{frame_id}.txt')
         rotvec = R.from_matrix(pose[:3, :3]).as_rotvec()
         translation = pose[:3, 3]
         f = (camera_params[2], camera_params[3])
@@ -105,7 +105,7 @@ class Camera:
 
 class Scan:
     def __init__(self, scan_path, sparsity=1, cut_frames=None, scale=1000):
-        frames = sorted(glob(f"{scan_path}/frame*_floor*"))
+        frames = sorted(glob(f"{scan_path}/arcore/frame*_floor*"))
         frame_ids = [i.split("/")[-1][6:-10] for i in frames]
         frame_ids = frame_ids[::sparsity]
 

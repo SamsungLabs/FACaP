@@ -5,7 +5,8 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 RUN apt-get update &&\
     apt-get upgrade -y &&\
-    apt-get install -y curl git vim htop wget bzip2 g++ libgl1-mesa-dev libosmesa6-dev patchelf libglfw3 libglew-dev libglib2.0-0 libsm6 unzip xvfb
+    apt-get install -y curl git vim htop wget bzip2 g++ libgl1-mesa-dev libosmesa6-dev patchelf\
+            libglfw3 libglew-dev libglib2.0-0 libsm6 unzip xvfb
 
 ARG USERNAME=user
 RUN apt-get install -y sudo && \
@@ -36,11 +37,3 @@ RUN pip install open3d==0.10.0 -U
 
 
 SHELL ["/bin/bash", "-c"]
-
-
-    
-
-
-    
-
-
