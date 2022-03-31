@@ -87,8 +87,8 @@ if __name__ == '__main__':
             print(f"\t\t floor term - {float(floor_term)}")
 
         if cfg["error"]["wall_term"]:
-            floor_term = wall_function() * cfg["error"]["wall_weight"]
-            print(f"\t\t wall term - {float(floor_term)}")
+            wall_term = wall_function() * cfg["error"]["wall_weight"]
+            print(f"\t\t wall term - {float(wall_term)}")
 
         loss = ba_term + wall_term + floor_term
         loss.backward()
