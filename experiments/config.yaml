@@ -1,6 +1,6 @@
 paths:
   scan_path: "./data/htkr"
-  save_path: "./data/htkr/results_3d"
+  save_path: "./data/htkr/results_2d"
 
 data:
   wall_sparsity: 150
@@ -11,15 +11,15 @@ data:
   depths_scale: 1000
 
 optimization:
-  num_epoches: 10
+  num_epoches: 25000
   lr: 0.1
   momentum: 0.9
-  fixed_cameras_idx: [0,]
+  fixed_cameras_idx: [ ]
 
 error:
   error_type: point_error
   floor_term: True
-  floor_weight: 0.1
+  floor_weight: 0.02
   wall_term: True
   wall_term_type: "segment"
-  wall_weight: 0.1
+  wall_weight: 0.0007
