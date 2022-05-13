@@ -25,6 +25,13 @@ floorplan improves accuracy of 3D reconstructions.
 
 ![](imgs/pipeline.png)
 
+
+## Instalation
+
+We recommend using `Dockerfile` to build a container for the project. 
+All required libraries are described in the environment file `env.yaml`. In the final version
+we drop all of the `pytorch3d` dependencies, so you do not have to install it. 
+
 ## Data structure
 All scans should be preprocessed to the next structure:
 ```
