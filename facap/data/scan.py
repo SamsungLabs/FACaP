@@ -52,7 +52,7 @@ def get_segmentation(scan_path, frame_ids, part="floor", sparsity=30, max_depth=
 
 
 def read_features(scan_path, xyds, frame_ids, min_freq=2):
-    scan_path = glob(f'{scan_path}/db/1/triangulated/feat*/')[0]
+    scan_path = f"{scan_path}/db.h5" #glob(f'{scan_path}/db/1/triangulated/feat*/')[0]
     cameras, images, points_3d = read_model(f'{scan_path}/sparse/models/triangulated')
 
     result = {}
