@@ -26,7 +26,7 @@ floorplan improves accuracy of 3D reconstructions.
 ![](imgs/pipeline.png)
 
 
-## Instalation
+## Installation
 
 We recommend using `Dockerfile` to build a container for the project. 
 All required libraries are described in the environment file `env.yaml`. In the final version
