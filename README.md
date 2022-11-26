@@ -1,7 +1,16 @@
 # FACaP
 
-This is  the official implementation for the paper 
-***Floorplan-Aware Camera Poses Refinement***.
+This repository contains an implementation of Floorplan-Aware Camera Poses Refinement paper, which was presented on 
+IROS 2022. 
+
+> **Floorplan-Aware Camera Poses Refinement**<br>
+> [Anna Sokolova](https://scholar.google.ru/citations?hl=en&user=0Pcv9G4AAAAJ),
+> [Filipp Nikitin](https://scholar.google.com/citations?user=DOljaG8AAAAJ&hl=en),
+> [Anna Vorontsova](https://github.com/highrut),
+> [Anton Konushin](https://scholar.google.com/citations?user=ZT_k-wMAAAAJ)
+> <br>
+> Samsung AI Center Moscow <br>
+> https://arxiv.org/abs/2210.04572
 
 ## Introduction
 
@@ -76,7 +85,21 @@ For more details please see the file `facap/data/scan.py`.
 To run an experiment you should create a config file run experiment. 
 
 ```python
-python scripts/run_experimnt.py --config path_to_config --device "cuda:0"
+    python scripts/run_experimnt.py --config path_to_config --device "cuda:0"
 ```
 
 The example of the config can be found in the path `experiments/config.yaml`.
+
+## Citation
+
+### Citation
+
+If you find this work useful for your research, please cite our paper:
+```
+@article{sokolova2022floorplan,
+  title={Floorplan-Aware Camera Poses Refinement},
+  author={Sokolova, Anna and Nikitin, Filipp and Vorontsova, Anna and Konushin, Anton},
+  journal={arXiv preprint arXiv:2210.04572},
+  year={2022}
+}
+```
