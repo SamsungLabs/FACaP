@@ -96,10 +96,13 @@ The example of the config can be found in the path `experiments/config.yaml`.
 
 If you find this work useful for your research, please cite our paper:
 ```
-@article{sokolova2022floorplan,
-  title={Floorplan-Aware Camera Poses Refinement},
+@INPROCEEDINGS{9981148,
   author={Sokolova, Anna and Nikitin, Filipp and Vorontsova, Anna and Konushin, Anton},
-  journal={arXiv preprint arXiv:2210.04572},
-  year={2022}
-}
+  booktitle={2022 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS)}, 
+  title={Floorplan-Aware Camera Poses Refinement}, 
+  year={2022},
+  volume={},
+  number={},
+  pages={4857-4864},
+  doi={10.1109/IROS47612.2022.9981148}}
 ```
