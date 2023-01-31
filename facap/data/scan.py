@@ -45,14 +45,14 @@ def get_segmentation(scan_path, frame_ids, part="floor", sparsity=30, max_depth=
         else:
             part = wall
 
-        part_mask = np.where((depth > min_depth) * (depth < max_depth) * (wall > 0))
+        part_mask = np.where((depth > min_depth) * (depth < max_depth) * (part > 0))
         part_dict = get_index_value_dict(depth, part_mask, sparsity=sparsity)
         result[frame_id] = list(part_dict.items())
     return result
 
 
 def read_features(scan_path, xyds, frame_ids, min_freq=2):
-    scan_path = f"{scan_path}/db.h5" #glob(f'{scan_path}/db/1/triangulated/feat*/')[0]
+    scan_path = f"{scan_path}/db" #glob(f'{scan_path}/db/1/triangulated/feat*/')[0]
     cameras, images, points_3d = read_model(f'{scan_path}/sparse/models/triangulated')
 
     result = {}
